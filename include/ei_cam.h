@@ -1,6 +1,7 @@
 #ifndef H_EI_CAM
 #define H_EI_CAM
 
+#include "edge-impulse-sdk/classifier/ei_classifier_types.h"
 #include "esp_camera.h"
 
 #define PWDN_GPIO_NUM 32
@@ -40,6 +41,7 @@ private:
     void _deinitCam(void);
     bool _captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_buf);
     static int _getDataCam(size_t offset, size_t length, float *out_ptr);
+    void _handlePredictions(ei_impulse_result_t *predictions);
 };
 
 #endif
