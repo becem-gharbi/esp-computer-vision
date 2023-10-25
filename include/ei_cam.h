@@ -34,7 +34,7 @@ class EICam
 public:
     void begin(bool logEnabled = true);
     void end();
-    static void loop();
+    static ei_impulse_result_t predict();
     void startStream();
     void stopStream();
 
@@ -45,7 +45,6 @@ private:
     void _deinitCam(void);
     static bool _captureCamForInference(uint32_t img_width, uint32_t img_height, uint8_t *out_buf);
     static int _getDataCamForEnference(size_t offset, size_t length, float *out_ptr);
-    static void _handlePredictions(ei_impulse_result_t *predictions);
     static esp_err_t _streamHandler(httpd_req_t *req);
     static httpd_handle_t _streamHttpd;
     static bool _isCapturingForEnference;
