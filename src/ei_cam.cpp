@@ -1,10 +1,10 @@
-#include "inference.h"
+#include "Inference.h"
 #include "edge-impulse-sdk/dsp/image/image.hpp"
 #include <ei_cam.h>
 
 bool EICam::_logEnabled = false;
 bool EICam::_camInitialized = false;
-bool EICam::_isCapturingForEnference = false;
+bool EICam::_isCapturingForInference = false;
 uint8_t *EICam::_snapshotBufferForInference = nullptr;
 httpd_handle_t EICam::_streamHttpd = NULL;
 
@@ -32,7 +32,7 @@ void EICam::begin(bool logEnabled)
         _log("Camera initialized\r\n");
     }
 
-    _log("\nStarting continuous inference in 2 seconds...\n");
+    _log("\nStarting continuous Inference in 2 seconds...\n");
     ei_sleep(2000);
 }
 
@@ -62,7 +62,7 @@ ei_impulse_result_t EICam::predict()
 
     ei::signal_t signal;
     signal.total_length = EI_CLASSIFIER_INPUT_WIDTH * EI_CLASSIFIER_INPUT_HEIGHT;
-    signal.get_data = &_getDataCamForEnference;
+    signal.get_data = &_getDataCamForInference;
 
     if (_captureCamForInference((size_t)EI_CLASSIFIER_INPUT_WIDTH, (size_t)EI_CLASSIFIER_INPUT_HEIGHT, _snapshotBufferForInference) == false)
     {
@@ -85,7 +85,7 @@ ei_impulse_result_t EICam::predict()
     return result;
 }
 
-int EICam::_getDataCamForEnference(size_t offset, size_t length, float *out_ptr)
+int EICam::_getDataCamForInference(size_t offset, size_t length, float *out_ptr)
 {
     // we already have a RGB888 buffer, so recalculate offset into pixel index
     size_t pixel_ix = offset * 3;
@@ -107,14 +107,14 @@ int EICam::_getDataCamForEnference(size_t offset, size_t length, float *out_ptr)
 
 bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uint8_t *out_buf)
 {
-    _isCapturingForEnference = true;
+    _isCapturingForInference = true;
 
     bool do_resize = false;
 
     if (_camInitialized == false)
     {
         _log("Camera is not initialized\r\n");
-        _isCapturingForEnference = false;
+        _isCapturingForInference = false;
         return false;
     }
 
@@ -123,7 +123,7 @@ bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uin
     if (!fb)
     {
         _log("[capture] Camera capture failed\n");
-        _isCapturingForEnference = false;
+        _isCapturingForInference = false;
         return false;
     }
 
@@ -134,7 +134,7 @@ bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uin
     if (!converted)
     {
         _log("[capture] Conversion failed\n");
-        _isCapturingForEnference = false;
+        _isCapturingForInference = false;
         return false;
     }
 
@@ -154,7 +154,7 @@ bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uin
             img_height);
     }
 
-    _isCapturingForEnference = false;
+    _isCapturingForInference = false;
     return true;
 }
 
@@ -276,7 +276,7 @@ esp_err_t EICam::_streamHandler(httpd_req_t *req)
 
     while (true)
     {
-        if (_isCapturingForEnference)
+        if (_isCapturingForInference)
         {
             delay(1);
             continue;
