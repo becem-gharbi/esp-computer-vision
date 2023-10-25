@@ -32,14 +32,13 @@
 class EICam
 {
 public:
-    void begin();
+    void begin(bool logEnabled = true);
     void end();
     static void loop();
     void startStream();
     void stopStream();
 
 private:
-    static camera_config_t _camConfig;
     static uint8_t *_snapshotBufferForInference;
     static bool _camInitialized;
     bool _initCam(void);
@@ -50,6 +49,8 @@ private:
     static esp_err_t _streamHandler(httpd_req_t *req);
     static httpd_handle_t _streamHttpd;
     static bool _isCapturingForEnference;
+    static bool _logEnabled;
+    static void _log(const char *format, ...);
 };
 
 #endif

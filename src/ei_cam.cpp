@@ -2,54 +2,37 @@
 #include "edge-impulse-sdk/dsp/image/image.hpp"
 #include <ei_cam.h>
 
+bool EICam::_logEnabled = false;
 bool EICam::_camInitialized = false;
 bool EICam::_isCapturingForEnference = false;
 uint8_t *EICam::_snapshotBufferForInference = {0};
 httpd_handle_t EICam::_streamHttpd = NULL;
-camera_config_t EICam::_camConfig = {
-    .pin_pwdn = PWDN_GPIO_NUM,
-    .pin_reset = RESET_GPIO_NUM,
-    .pin_xclk = XCLK_GPIO_NUM,
-    .pin_sscb_sda = SIOD_GPIO_NUM,
-    .pin_sscb_scl = SIOC_GPIO_NUM,
 
-    .pin_d7 = Y9_GPIO_NUM,
-    .pin_d6 = Y8_GPIO_NUM,
-    .pin_d5 = Y7_GPIO_NUM,
-    .pin_d4 = Y6_GPIO_NUM,
-    .pin_d3 = Y5_GPIO_NUM,
-    .pin_d2 = Y4_GPIO_NUM,
-    .pin_d1 = Y3_GPIO_NUM,
-    .pin_d0 = Y2_GPIO_NUM,
-    .pin_vsync = VSYNC_GPIO_NUM,
-    .pin_href = HREF_GPIO_NUM,
-    .pin_pclk = PCLK_GPIO_NUM,
-
-    // XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
-    .xclk_freq_hz = 20000000,
-    .ledc_timer = LEDC_TIMER_0,
-    .ledc_channel = LEDC_CHANNEL_0,
-
-    .pixel_format = PIXFORMAT_JPEG, // YUV422,GRAYSCALE,RGB565,JPEG
-    .frame_size = FRAMESIZE_QVGA,   // QQVGA-UXGA Do not use sizes above QVGA when not JPEG
-
-    .jpeg_quality = 12, // 0-63 lower number means higher quality
-    .fb_count = 1,      // if more than one, i2s runs in continuous mode. Use only with JPEG
-    .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
-};
-
-void EICam::begin()
+void EICam::_log(const char *format, ...)
 {
+    if (_logEnabled)
+    {
+        va_list args;
+        va_start(args, format);
+        Serial.printf(format, args);
+        va_end(args);
+    }
+}
+
+void EICam::begin(bool logEnabled)
+{
+    _logEnabled = logEnabled;
+
     if (_initCam() == false)
     {
-        ei_printf("Failed to initialize Camera!\r\n");
+        _log("Failed to initialize Camera!\r\n");
     }
     else
     {
-        ei_printf("Camera initialized\r\n");
+        _log("Camera initialized\r\n");
     }
 
-    ei_printf("\nStarting continuous inference in 2 seconds...\n");
+    _log("\nStarting continuous inference in 2 seconds...\n");
     ei_sleep(2000);
 }
 
@@ -71,7 +54,7 @@ void EICam::loop()
     // check if allocation was successful
     if (_snapshotBufferForInference == nullptr)
     {
-        ei_printf("ERR: Failed to allocate snapshot buffer!\n");
+        _log("ERR: Failed to allocate snapshot buffer!\n");
         return;
     }
 
@@ -81,7 +64,6 @@ void EICam::loop()
 
     if (_captureCamForInference((size_t)EI_CLASSIFIER_INPUT_WIDTH, (size_t)EI_CLASSIFIER_INPUT_HEIGHT, _snapshotBufferForInference) == false)
     {
-        ei_printf("Failed to capture image\r\n");
         free(_snapshotBufferForInference);
         return;
     }
@@ -95,7 +77,7 @@ void EICam::loop()
 
     if (err != EI_IMPULSE_OK)
     {
-        ei_printf("ERR: Failed to run classifier (%d)\n", err);
+        _log("Failed to run classifier (%d)\n", err);
         return;
     }
 
@@ -130,7 +112,7 @@ bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uin
 
     if (_camInitialized == false)
     {
-        ei_printf("[capture] Camera is not initialized\r\n");
+        _log("Camera is not initialized\r\n");
         _isCapturingForEnference = false;
         return false;
     }
@@ -139,7 +121,7 @@ bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uin
 
     if (!fb)
     {
-        ei_printf("[capture] Camera capture failed\n");
+        _log("[capture] Camera capture failed\n");
         _isCapturingForEnference = false;
         return false;
     }
@@ -150,7 +132,7 @@ bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uin
 
     if (!converted)
     {
-        ei_printf("[capture] Conversion failed\n");
+        _log("[capture] Conversion failed\n");
         _isCapturingForEnference = false;
         return false;
     }
@@ -182,7 +164,7 @@ void EICam::_deinitCam()
 
     if (err != ESP_OK)
     {
-        ei_printf("Camera deinit failed\n");
+        _log("Camera deinit failed\n");
         return;
     }
 
@@ -195,11 +177,43 @@ bool EICam::_initCam()
     if (_camInitialized == true)
         return true;
 
+    const camera_config_t _camConfig = {
+        .pin_pwdn = PWDN_GPIO_NUM,
+        .pin_reset = RESET_GPIO_NUM,
+        .pin_xclk = XCLK_GPIO_NUM,
+        .pin_sscb_sda = SIOD_GPIO_NUM,
+        .pin_sscb_scl = SIOC_GPIO_NUM,
+
+        .pin_d7 = Y9_GPIO_NUM,
+        .pin_d6 = Y8_GPIO_NUM,
+        .pin_d5 = Y7_GPIO_NUM,
+        .pin_d4 = Y6_GPIO_NUM,
+        .pin_d3 = Y5_GPIO_NUM,
+        .pin_d2 = Y4_GPIO_NUM,
+        .pin_d1 = Y3_GPIO_NUM,
+        .pin_d0 = Y2_GPIO_NUM,
+        .pin_vsync = VSYNC_GPIO_NUM,
+        .pin_href = HREF_GPIO_NUM,
+        .pin_pclk = PCLK_GPIO_NUM,
+
+        // XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
+        .xclk_freq_hz = 20000000,
+        .ledc_timer = LEDC_TIMER_0,
+        .ledc_channel = LEDC_CHANNEL_0,
+
+        .pixel_format = PIXFORMAT_JPEG, // YUV422,GRAYSCALE,RGB565,JPEG
+        .frame_size = FRAMESIZE_QVGA,   // QQVGA-UXGA Do not use sizes above QVGA when not JPEG
+
+        .jpeg_quality = 12, // 0-63 lower number means higher quality
+        .fb_count = 1,      // if more than one, i2s runs in continuous mode. Use only with JPEG
+        .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
+    };
+
     // initialize the camera
     esp_err_t err = esp_camera_init(&_camConfig);
     if (err != ESP_OK)
     {
-        Serial.printf("Camera init failed with error 0x%x\n", err);
+        _log("Camera init failed with error 0x%x\n", err);
         return false;
     }
 
@@ -213,14 +227,16 @@ bool EICam::_initCam()
     }
 
     _camInitialized = true;
+
+    _log("Camera initialized");
+
     return true;
 }
 
 void EICam::_handlePredictions(ei_impulse_result_t *predictions)
 {
-    // print the predictions
-    ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
-              predictions->timing.dsp, predictions->timing.classification, predictions->timing.anomaly);
+    _log("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
+         predictions->timing.dsp, predictions->timing.classification, predictions->timing.anomaly);
 
 #if EI_CLASSIFIER_OBJECT_DETECTION == 1
     bool bb_found = predictions->bounding_boxes[0].value > 0;
@@ -231,23 +247,23 @@ void EICam::_handlePredictions(ei_impulse_result_t *predictions)
         {
             continue;
         }
-        ei_printf("%s (%f) [ x: %u, y: %u, width: %u, height: %u ]\n", bb.label, bb.value, bb.x, bb.y, bb.width, bb.height);
+        _log("%s (%f) [ x: %u, y: %u, width: %u, height: %u ]\n", bb.label, bb.value, bb.x, bb.y, bb.width, bb.height);
     }
     if (!bb_found)
     {
-        ei_printf("No objects found\n");
+        _log("No objects found\n");
     }
-    ei_printf("\n");
+    _log("\n");
 #else
     for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++)
     {
-        ei_printf("    %s: %.5f\n", predictions->classification[ix].label,
-                  predictions->classification[ix].value);
+        _log("    %s: %.5f\n", predictions->classification[ix].label,
+             predictions->classification[ix].value);
     }
 #endif
 
 #if EI_CLASSIFIER_HAS_ANOMALY == 1
-    ei_printf("    anomaly score: %.3f\n", predictions->anomaly);
+    _log("    anomaly score: %.3f\n", predictions->anomaly);
 #endif
 }
 
@@ -302,7 +318,7 @@ esp_err_t EICam::_streamHandler(httpd_req_t *req)
         fb = esp_camera_fb_get();
         if (!fb)
         {
-            Serial.println("[stream] Camera capture failed");
+            _log("[stream] Camera capture failed");
             res = ESP_FAIL;
         }
         else
@@ -317,7 +333,7 @@ esp_err_t EICam::_streamHandler(httpd_req_t *req)
                     fb = NULL;
                     if (!jpeg_converted)
                     {
-                        Serial.println("[stream] JPEG compression failed");
+                        _log("[stream] JPEG compression failed");
                         res = ESP_FAIL;
                     }
                 }

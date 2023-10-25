@@ -10,7 +10,7 @@ void setup()
 {
     Serial.begin(115200);
 
-    eiCam.begin();
+    eiCam.begin(true);
 
     connectWiFi();
 
