@@ -40,16 +40,16 @@ public:
 
 private:
     static camera_config_t _camConfig;
-    static uint8_t *_snapshotBuffer;
+    static uint8_t *_snapshotBufferForInference;
     static bool _camInitialized;
     bool _initCam(void);
     void _deinitCam(void);
-    static bool _captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_buf);
-    static int _getDataCam(size_t offset, size_t length, float *out_ptr);
+    static bool _captureCamForInference(uint32_t img_width, uint32_t img_height, uint8_t *out_buf);
+    static int _getDataCamForEnference(size_t offset, size_t length, float *out_ptr);
     static void _handlePredictions(ei_impulse_result_t *predictions);
     static esp_err_t _streamHandler(httpd_req_t *req);
     static httpd_handle_t _streamHttpd;
-    static bool _isCapturing;
+    static bool _isCapturingForEnference;
 };
 
 #endif

@@ -3,8 +3,8 @@
 #include <ei_cam.h>
 
 bool EICam::_camInitialized = false;
-bool EICam::_isCapturing = false;
-uint8_t *EICam::_snapshotBuffer = {0};
+bool EICam::_isCapturingForEnference = false;
+uint8_t *EICam::_snapshotBufferForInference = {0};
 httpd_handle_t EICam::_streamHttpd = NULL;
 camera_config_t EICam::_camConfig = {
     .pin_pwdn = PWDN_GPIO_NUM,
@@ -66,10 +66,10 @@ void EICam::loop()
         return;
     }
 
-    _snapshotBuffer = (uint8_t *)malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS * EI_CAMERA_FRAME_BYTE_SIZE);
+    _snapshotBufferForInference = (uint8_t *)malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS * EI_CAMERA_FRAME_BYTE_SIZE);
 
     // check if allocation was successful
-    if (_snapshotBuffer == nullptr)
+    if (_snapshotBufferForInference == nullptr)
     {
         ei_printf("ERR: Failed to allocate snapshot buffer!\n");
         return;
@@ -77,12 +77,12 @@ void EICam::loop()
 
     ei::signal_t signal;
     signal.total_length = EI_CLASSIFIER_INPUT_WIDTH * EI_CLASSIFIER_INPUT_HEIGHT;
-    signal.get_data = &_getDataCam;
+    signal.get_data = &_getDataCamForEnference;
 
-    if (_captureCam((size_t)EI_CLASSIFIER_INPUT_WIDTH, (size_t)EI_CLASSIFIER_INPUT_HEIGHT, _snapshotBuffer) == false)
+    if (_captureCamForInference((size_t)EI_CLASSIFIER_INPUT_WIDTH, (size_t)EI_CLASSIFIER_INPUT_HEIGHT, _snapshotBufferForInference) == false)
     {
         ei_printf("Failed to capture image\r\n");
-        free(_snapshotBuffer);
+        free(_snapshotBufferForInference);
         return;
     }
 
@@ -91,7 +91,7 @@ void EICam::loop()
 
     EI_IMPULSE_ERROR err = run_classifier(&signal, &result, false);
 
-    free(_snapshotBuffer);
+    free(_snapshotBufferForInference);
 
     if (err != EI_IMPULSE_OK)
     {
@@ -102,7 +102,7 @@ void EICam::loop()
     _handlePredictions(&result);
 }
 
-int EICam::_getDataCam(size_t offset, size_t length, float *out_ptr)
+int EICam::_getDataCamForEnference(size_t offset, size_t length, float *out_ptr)
 {
     // we already have a RGB888 buffer, so recalculate offset into pixel index
     size_t pixel_ix = offset * 3;
@@ -111,7 +111,7 @@ int EICam::_getDataCam(size_t offset, size_t length, float *out_ptr)
 
     while (pixels_left != 0)
     {
-        out_ptr[out_ptr_ix] = (_snapshotBuffer[pixel_ix] << 16) + (_snapshotBuffer[pixel_ix + 1] << 8) + _snapshotBuffer[pixel_ix + 2];
+        out_ptr[out_ptr_ix] = (_snapshotBufferForInference[pixel_ix] << 16) + (_snapshotBufferForInference[pixel_ix + 1] << 8) + _snapshotBufferForInference[pixel_ix + 2];
 
         // go to the next pixel
         out_ptr_ix++;
@@ -122,16 +122,16 @@ int EICam::_getDataCam(size_t offset, size_t length, float *out_ptr)
     return 0;
 }
 
-bool EICam::_captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_buf)
+bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uint8_t *out_buf)
 {
-    _isCapturing = true;
+    _isCapturingForEnference = true;
 
     bool do_resize = false;
 
     if (_camInitialized == false)
     {
         ei_printf("[capture] Camera is not initialized\r\n");
-        _isCapturing = false;
+        _isCapturingForEnference = false;
         return false;
     }
 
@@ -140,18 +140,18 @@ bool EICam::_captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_bu
     if (!fb)
     {
         ei_printf("[capture] Camera capture failed\n");
-        _isCapturing = false;
+        _isCapturingForEnference = false;
         return false;
     }
 
-    bool converted = fmt2rgb888(fb->buf, fb->len, PIXFORMAT_JPEG, _snapshotBuffer);
+    bool converted = fmt2rgb888(fb->buf, fb->len, PIXFORMAT_JPEG, _snapshotBufferForInference);
 
     esp_camera_fb_return(fb);
 
     if (!converted)
     {
         ei_printf("[capture] Conversion failed\n");
-        _isCapturing = false;
+        _isCapturingForEnference = false;
         return false;
     }
 
@@ -171,7 +171,7 @@ bool EICam::_captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_bu
             img_height);
     }
 
-    _isCapturing = false;
+    _isCapturingForEnference = false;
     return true;
 }
 
@@ -293,7 +293,7 @@ esp_err_t EICam::_streamHandler(httpd_req_t *req)
 
     while (true)
     {
-        if (_isCapturing)
+        if (_isCapturingForEnference)
         {
             delay(1);
             continue;
