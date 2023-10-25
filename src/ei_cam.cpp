@@ -2,6 +2,10 @@
 #include "edge-impulse-sdk/dsp/image/image.hpp"
 #include <ei_cam.h>
 
+bool EICam::_camInitialized = false;
+bool EICam::_isCapturing = false;
+uint8_t *EICam::_snapshotBuffer = {0};
+httpd_handle_t EICam::_streamHttpd = NULL;
 camera_config_t EICam::_camConfig = {
     .pin_pwdn = PWDN_GPIO_NUM,
     .pin_reset = RESET_GPIO_NUM,
@@ -33,7 +37,6 @@ camera_config_t EICam::_camConfig = {
     .fb_count = 1,      // if more than one, i2s runs in continuous mode. Use only with JPEG
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
 };
-uint8_t *EICam::_snapshotBuffer = {0};
 
 void EICam::begin()
 {
@@ -57,7 +60,6 @@ void EICam::end()
 
 void EICam::loop()
 {
-
     // instead of wait_ms, we'll wait on the signal, this allows threads to cancel us...
     if (ei_sleep(5) != EI_IMPULSE_OK)
     {
@@ -122,11 +124,14 @@ int EICam::_getDataCam(size_t offset, size_t length, float *out_ptr)
 
 bool EICam::_captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_buf)
 {
+    _isCapturing = true;
+
     bool do_resize = false;
 
     if (_camInitialized == false)
     {
-        ei_printf("ERR: Camera is not initialized\r\n");
+        ei_printf("[capture] Camera is not initialized\r\n");
+        _isCapturing = false;
         return false;
     }
 
@@ -134,7 +139,8 @@ bool EICam::_captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_bu
 
     if (!fb)
     {
-        ei_printf("Camera capture failed\n");
+        ei_printf("[capture] Camera capture failed\n");
+        _isCapturing = false;
         return false;
     }
 
@@ -144,7 +150,8 @@ bool EICam::_captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_bu
 
     if (!converted)
     {
-        ei_printf("Conversion failed\n");
+        ei_printf("[capture] Conversion failed\n");
+        _isCapturing = false;
         return false;
     }
 
@@ -164,6 +171,7 @@ bool EICam::_captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_bu
             img_height);
     }
 
+    _isCapturing = false;
     return true;
 }
 
@@ -241,4 +249,113 @@ void EICam::_handlePredictions(ei_impulse_result_t *predictions)
 #if EI_CLASSIFIER_HAS_ANOMALY == 1
     ei_printf("    anomaly score: %.3f\n", predictions->anomaly);
 #endif
+}
+
+void EICam::startStream()
+{
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.server_port = 80;
+
+    httpd_uri_t index_uri = {
+        .uri = "/",
+        .method = HTTP_GET,
+        .handler = _streamHandler,
+        .user_ctx = NULL};
+
+    if (httpd_start(&_streamHttpd, &config) == ESP_OK)
+    {
+        httpd_register_uri_handler(_streamHttpd, &index_uri);
+    }
+}
+
+void EICam::stopStream()
+{
+    httpd_stop(_streamHttpd);
+}
+
+esp_err_t EICam::_streamHandler(httpd_req_t *req)
+{
+    const char *_STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
+    const char *_STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
+    const char *_STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
+
+    camera_fb_t *fb = NULL;
+    esp_err_t res = ESP_OK;
+    size_t _jpg_buf_len = 0;
+    uint8_t *_jpg_buf = NULL;
+    char *part_buf[64];
+
+    res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
+    if (res != ESP_OK)
+    {
+        return res;
+    }
+
+    while (true)
+    {
+        if (_isCapturing)
+        {
+            delay(1);
+            continue;
+        }
+
+        fb = esp_camera_fb_get();
+        if (!fb)
+        {
+            Serial.println("[stream] Camera capture failed");
+            res = ESP_FAIL;
+        }
+        else
+        {
+            if (fb->width > 0)
+            {
+
+                if (fb->format != PIXFORMAT_JPEG)
+                {
+                    bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
+                    esp_camera_fb_return(fb);
+                    fb = NULL;
+                    if (!jpeg_converted)
+                    {
+                        Serial.println("[stream] JPEG compression failed");
+                        res = ESP_FAIL;
+                    }
+                }
+                else
+                {
+                    _jpg_buf_len = fb->len;
+                    _jpg_buf = fb->buf;
+                }
+            }
+        }
+        if (res == ESP_OK)
+        {
+            size_t hlen = snprintf((char *)part_buf, 64, _STREAM_PART, _jpg_buf_len);
+            res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
+        }
+        if (res == ESP_OK)
+        {
+            res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
+        }
+        if (res == ESP_OK)
+        {
+            res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
+        }
+        if (fb)
+        {
+            esp_camera_fb_return(fb);
+            fb = NULL;
+            _jpg_buf = NULL;
+        }
+        else if (_jpg_buf)
+        {
+            free(_jpg_buf);
+            _jpg_buf = NULL;
+        }
+        if (res != ESP_OK)
+        {
+            break;
+        }
+    }
+    return res;
 }

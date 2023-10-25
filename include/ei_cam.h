@@ -3,6 +3,7 @@
 
 #include "edge-impulse-sdk/classifier/ei_classifier_types.h"
 #include "esp_camera.h"
+#include "esp_http_server.h"
 
 #define PWDN_GPIO_NUM 32
 #define RESET_GPIO_NUM -1
@@ -26,22 +27,29 @@
 #define EI_CAMERA_RAW_FRAME_BUFFER_ROWS 240
 #define EI_CAMERA_FRAME_BYTE_SIZE 3
 
+#define PART_BOUNDARY "123456789000000000000987654321"
+
 class EICam
 {
 public:
     void begin();
     void end();
-    void loop();
+    static void loop();
+    void startStream();
+    void stopStream();
 
 private:
     static camera_config_t _camConfig;
     static uint8_t *_snapshotBuffer;
-    bool _camInitialized;
+    static bool _camInitialized;
     bool _initCam(void);
     void _deinitCam(void);
-    bool _captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_buf);
+    static bool _captureCam(uint32_t img_width, uint32_t img_height, uint8_t *out_buf);
     static int _getDataCam(size_t offset, size_t length, float *out_ptr);
-    void _handlePredictions(ei_impulse_result_t *predictions);
+    static void _handlePredictions(ei_impulse_result_t *predictions);
+    static esp_err_t _streamHandler(httpd_req_t *req);
+    static httpd_handle_t _streamHttpd;
+    static bool _isCapturing;
 };
 
 #endif
