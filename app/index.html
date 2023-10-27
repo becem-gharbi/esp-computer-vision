@@ -21,19 +21,16 @@
         const captureBtn = document.getElementById('capture-btn')
         const camImg = document.getElementById("cam-img");
 
-        // Create a canvas element
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
 
-        // Set the canvas size to match the image dimensions
         canvas.width = camImg.width;
         canvas.height = camImg.height;
 
         captureBtn.addEventListener("click", () => {
-            // Draw the image onto the canvas
             ctx.drawImage(camImg, 0, 0);
 
-            canvas.toBlob(blob => { saveAs(blob, "image.jpg") })
+            canvas.toBlob(blob => { saveAs(blob, "capture.jpg") })
         })
 
     </script>

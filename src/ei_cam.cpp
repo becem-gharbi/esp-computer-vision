@@ -204,7 +204,7 @@ bool EICam::_initCam()
         .pixel_format = PIXFORMAT_JPEG, // YUV422,GRAYSCALE,RGB565,JPEG
         .frame_size = FRAMESIZE_QVGA,   // QQVGA-UXGA Do not use sizes above QVGA when not JPEG
 
-        .jpeg_quality = 10, // 0-63 lower number means higher quality
+        .jpeg_quality = 12, // 0-63 lower number means higher quality
         .fb_count = 1,      // if more than one, i2s runs in continuous mode. Use only with JPEG
         .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
     };
