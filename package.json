@@ -1,0 +1,20 @@
+{
+  "name": "esp32-cam-object-detection",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "npx changelogen --release && git push --follow-tags"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "changelogen": "^0.5.5"
+  }
+}
