@@ -17,10 +17,6 @@ void setup()
 
     eiCam.startStream();
 
-    Serial.print("Camera Stream Ready! Go to: http://");
-    Serial.print(WiFi.localIP());
-    Serial.printf("\n");
-
     eiCam.controlLED(0);
 }
 
@@ -67,14 +63,20 @@ void handlePredictions(ei_impulse_result_t *predictions)
 
 void connectWiFi()
 {
+    if (!WiFi.config(staticIP, gateway, subnet))
+    {
+        Serial.printf("Failed to set static IP\n");
+    }
+
     WiFi.begin(ssid, password);
 
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
-        Serial.print(".");
+        Serial.printf(".");
     }
 
-    Serial.println("");
-    Serial.println("WiFi connected");
+    const char *ip = staticIP.toString().c_str();
+
+    Serial.printf("\nWiFi connected on %s\n", ip);
 }
