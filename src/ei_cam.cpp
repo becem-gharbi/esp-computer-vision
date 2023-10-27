@@ -38,6 +38,7 @@ void EICam::begin(bool logEnabled)
 
 void EICam::end()
 {
+    stopStream();
     _deinitCam();
 }
 
@@ -107,16 +108,15 @@ int EICam::_getDataCamForInference(size_t offset, size_t length, float *out_ptr)
 
 bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uint8_t *out_buf)
 {
-    _isCapturingForInference = true;
-
     bool do_resize = false;
 
     if (_camInitialized == false)
     {
         _log("Camera is not initialized\r\n");
-        _isCapturingForInference = false;
         return false;
     }
+
+    _isCapturingForInference = true;
 
     camera_fb_t *fb = esp_camera_fb_get();
 
@@ -253,7 +253,9 @@ void EICam::startStream()
 
 void EICam::stopStream()
 {
-    httpd_stop(_streamHttpd);
+    if(_streamHttpd) {
+        httpd_stop(_streamHttpd);
+    }
 }
 
 esp_err_t EICam::_streamHandler(httpd_req_t *req)
