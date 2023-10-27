@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP object detection</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"
+        integrity="sha512-csNcFYJniKjJxRWRV1R7fvnXrycHP6qDR21mgz1ZP55xY5d+aHLfo9/FcGDQLfn2IfngbAHd8LdfsagcCqgTcQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+
+<body>
+    <h2>ESP32 Object detection with Edge Impulse</h2>
+
+    <img id="cam-img" src="http://192.168.43.203" alt="camera stream" crossorigin="anonymous" height="240" width="320">
+    <button id="capture-btn">Capture</button>
+
+    <script type="module">
+
+        const captureBtn = document.getElementById('capture-btn')
+        const camImg = document.getElementById("cam-img");
+
+        // Create a canvas element
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Set the canvas size to match the image dimensions
+        canvas.width = camImg.width;
+        canvas.height = camImg.height;
+
+        captureBtn.addEventListener("click", () => {
+            // Draw the image onto the canvas
+            ctx.drawImage(camImg, 0, 0);
+
+            canvas.toBlob(blob => { saveAs(blob, "image.jpg") })
+        })
+
+    </script>
+
+</body>
+
+</html>
