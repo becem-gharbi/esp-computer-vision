@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <ei_cam.h>
 #include <WiFi.h>
-#include <credentials.h>
+#include <config.h>
 
 EICam eiCam = EICam();
 void connectWiFi();
@@ -47,11 +47,10 @@ void handlePredictions(ei_impulse_result_t *predictions)
     {
         Serial.printf("No objects found\n");
     }
-    Serial.printf("\n");
 #else
     for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++)
     {
-        Serial.printf("    %s: %.5f\n", predictions->classification[ix].label,
+        Serial.printf("%s: %.5f\n", predictions->classification[ix].label,
                       predictions->classification[ix].value);
     }
 #endif
@@ -59,6 +58,8 @@ void handlePredictions(ei_impulse_result_t *predictions)
 #if EI_CLASSIFIER_HAS_ANOMALY == 1
     _log("    anomaly score: %.3f\n", predictions->anomaly);
 #endif
+
+    Serial.printf("\n");
 }
 
 void connectWiFi()

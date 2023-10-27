@@ -1,4 +1,4 @@
-#include "Inference.h"
+#include "inferencing.h"
 #include "edge-impulse-sdk/dsp/image/image.hpp"
 #include <ei_cam.h>
 

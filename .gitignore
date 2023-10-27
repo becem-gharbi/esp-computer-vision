@@ -3,7 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
-include/credentials.h
 predictions.json
 node_modules
 pnpm-lock.yaml
+data
