@@ -27,6 +27,8 @@
 #define EI_CAMERA_RAW_FRAME_BUFFER_ROWS 240
 #define EI_CAMERA_FRAME_BYTE_SIZE 3
 
+#define LEDC_CHANNEL 15
+
 #define PART_BOUNDARY "123456789000000000000987654321"
 
 class EICam
@@ -37,12 +39,17 @@ public:
     static ei_impulse_result_t predict();
     void startStream();
     void stopStream();
+    /**
+     * @param intensity between 0 and 255
+     */
+    void controlLED(uint8_t intensity);
 
 private:
     static uint8_t *_snapshotBufferForInference;
     static bool _camInitialized;
     bool _initCam(void);
     void _deinitCam(void);
+    void _initLED();
     static bool _captureCamForInference(uint32_t img_width, uint32_t img_height, uint8_t *out_buf);
     static int _getDataCamForInference(size_t offset, size_t length, float *out_ptr);
     static esp_err_t _streamHandler(httpd_req_t *req);

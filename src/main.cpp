@@ -20,6 +20,8 @@ void setup()
     Serial.print("Camera Stream Ready! Go to: http://");
     Serial.print(WiFi.localIP());
     Serial.printf("\n");
+
+    eiCam.controlLED(0);
 }
 
 void loop()

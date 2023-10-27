@@ -32,6 +32,8 @@ void EICam::begin(bool logEnabled)
         _log("Camera initialized\r\n");
     }
 
+    _initLED();
+
     _log("\nStarting continuous Inference in 2 seconds...\n");
     ei_sleep(2000);
 }
@@ -131,10 +133,11 @@ bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uin
 
     esp_camera_fb_return(fb);
 
+    _isCapturingForInference = false;
+
     if (!converted)
     {
         _log("[capture] Conversion failed\n");
-        _isCapturingForInference = false;
         return false;
     }
 
@@ -154,7 +157,6 @@ bool EICam::_captureCamForInference(uint32_t img_width, uint32_t img_height, uin
             img_height);
     }
 
-    _isCapturingForInference = false;
     return true;
 }
 
@@ -199,13 +201,11 @@ bool EICam::_initCam()
 
         // XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
         .xclk_freq_hz = 20000000,
-        .ledc_timer = LEDC_TIMER_0,
-        .ledc_channel = LEDC_CHANNEL_0,
 
         .pixel_format = PIXFORMAT_JPEG, // YUV422,GRAYSCALE,RGB565,JPEG
         .frame_size = FRAMESIZE_QVGA,   // QQVGA-UXGA Do not use sizes above QVGA when not JPEG
 
-        .jpeg_quality = 12, // 0-63 lower number means higher quality
+        .jpeg_quality = 10, // 0-63 lower number means higher quality
         .fb_count = 1,      // if more than one, i2s runs in continuous mode. Use only with JPEG
         .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
     };
@@ -253,7 +253,8 @@ void EICam::startStream()
 
 void EICam::stopStream()
 {
-    if(_streamHttpd) {
+    if (_streamHttpd)
+    {
         httpd_stop(_streamHttpd);
     }
 }
@@ -342,5 +343,18 @@ esp_err_t EICam::_streamHandler(httpd_req_t *req)
             break;
         }
     }
+
     return res;
+}
+
+void EICam::controlLED(uint8_t intensity)
+{
+    ledcWrite(LEDC_CHANNEL, intensity); 
+}
+
+void EICam::_initLED()
+{
+    ledcSetup(LEDC_CHANNEL, 4000, 8);
+    ledcAttachPin(4, LEDC_CHANNEL);
+    controlLED(0);
 }
