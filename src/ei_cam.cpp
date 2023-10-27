@@ -270,6 +270,12 @@ esp_err_t EICam::_streamHandler(httpd_req_t *req)
     uint8_t *_jpg_buf = NULL;
     char *part_buf[64];
 
+    res = httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    if (res != ESP_OK)
+    {
+        return res;
+    }
+
     res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
     if (res != ESP_OK)
     {
