@@ -40,7 +40,7 @@ public:
     void startStream();
     void stopStream();
     /**
-     * @param intensity between 0 and 255
+     * @param intensity between 0 and 255, set 0 to disable
      */
     void controlLED(uint8_t intensity);
 
@@ -50,12 +50,14 @@ private:
     bool _initCam(void);
     void _deinitCam(void);
     void _initLED();
+    void _deinitLED();
     static bool _captureCamForInference(uint32_t img_width, uint32_t img_height, uint8_t *out_buf);
     static int _getDataCamForInference(size_t offset, size_t length, float *out_ptr);
     static esp_err_t _streamHandler(httpd_req_t *req);
     static httpd_handle_t _streamHttpd;
     static bool _isCapturingForInference;
     static bool _logEnabled;
+    static bool _ledEnabled;
     static void _log(const char *format, ...);
 };
 

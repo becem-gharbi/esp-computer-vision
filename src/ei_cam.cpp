@@ -3,6 +3,7 @@
 #include <ei_cam.h>
 
 bool EICam::_logEnabled = false;
+bool EICam::_ledEnabled = false;
 bool EICam::_camInitialized = false;
 bool EICam::_isCapturingForInference = false;
 uint8_t *EICam::_snapshotBufferForInference = nullptr;
@@ -31,8 +32,6 @@ void EICam::begin(bool logEnabled)
     {
         _log("Camera initialized\r\n");
     }
-
-    _initLED();
 
     _log("\nStarting continuous Inference in 2 seconds...\n");
     ei_sleep(2000);
@@ -349,12 +348,29 @@ esp_err_t EICam::_streamHandler(httpd_req_t *req)
 
 void EICam::controlLED(uint8_t intensity)
 {
-    ledcWrite(LEDC_CHANNEL, intensity); 
+    if (!_ledEnabled && intensity > 0)
+    {
+        _initLED();
+    }
+    else if (_ledEnabled && intensity == 0)
+    {
+        _deinitLED();
+    }
+    if (intensity > 0)
+    {
+        ledcWrite(LEDC_CHANNEL, intensity);
+    }
 }
 
 void EICam::_initLED()
 {
+    _ledEnabled = true;
     ledcSetup(LEDC_CHANNEL, 4000, 8);
     ledcAttachPin(4, LEDC_CHANNEL);
-    controlLED(0);
+}
+
+void EICam::_deinitLED()
+{
+    _ledEnabled = false;
+    ledcDetachPin(4);
 }
