@@ -1,6 +1,24 @@
 # Changelog
 
 
+## v0.1.2
+
+[compare changes](https://github.com/becem-gharbi/esp32-computer-vision/compare/v0.1.1...v0.1.2)
+
+### 📖 Documentation
+
+- Create README ([f6b46d1](https://github.com/becem-gharbi/esp32-computer-vision/commit/f6b46d1))
+
+### 🏡 Chore
+
+- Decrese cam jpeg quality to 12 ([b324a30](https://github.com/becem-gharbi/esp32-computer-vision/commit/b324a30))
+- Try hand open-close model ([148cc70](https://github.com/becem-gharbi/esp32-computer-vision/commit/148cc70))
+- Test card detection model ([bda7cc0](https://github.com/becem-gharbi/esp32-computer-vision/commit/bda7cc0))
+
+### ❤️ Contributors
+
+- Becem-gharbi <becem.gharbi@live.com>
+
 ## v0.1.1
 
 
