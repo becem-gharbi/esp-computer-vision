@@ -1,6 +1,6 @@
 # ESP32 computer vision
 
-This project is a starter to run computer vision applications (image classification, object detection..) directly on ESP32 cam. No extra coding or deep ML knowledge is required as the process is done with [Edge Impulse](https://edgeimpulse.com). It's a platform that takes input data (image, sound..) and extracts features, trains the model and exports the code as library for multiple platforms including embedded devices (Arduino, Espressif..).
+This project is a starter to build computer vision applications with inference directly on ESP32 microcontrollers. No extra coding or deep ML knowledge is required as the process is done with [Edge Impulse](https://edgeimpulse.com). It's a platform that takes input data (image, sound..) and extracts features, trains the model and exports the code as library for multiple platforms including embedded devices (Arduino, Espressif..).
 
 ## Getting started
 
