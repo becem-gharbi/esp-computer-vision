@@ -29,7 +29,7 @@
 #include "edge-impulse-sdk/classifier/ei_model_types.h"
 #include "edge-impulse-sdk/classifier/inferencing_engines/engines.h"
 
-const char* ei_classifier_inferencing_categories[] = { "hand_closed", "hand_opened", "idle" };
+const char* ei_classifier_inferencing_categories[] = { "cars", "unknown" };
 
 uint8_t ei_dsp_config_3_axes[] = { 0 };
 const uint32_t ei_dsp_config_3_axes_size = 1;
@@ -37,13 +37,13 @@ ei_dsp_config_image_t ei_dsp_config_3 = {
     3, // uint32_t blockId
     1, // int implementationVersion
     1, // int length of axes
-    "Grayscale" // select channels
+    "RGB" // select channels
 };
 
 const size_t ei_dsp_blocks_size = 1;
 ei_model_dsp_t ei_dsp_blocks[ei_dsp_blocks_size] = {
     { // DSP block 3
-        9216,
+        27648,
         &extract_image_features,
         (void*)&ei_dsp_config_3,
         ei_dsp_config_3_axes,
@@ -90,13 +90,13 @@ const ei_model_performance_calibration_t ei_calibration = {
     0   /* Don't use flags */
 };
 
-const ei_impulse_t impulse_300495_1 = {
-    .project_id = 300495,
+const ei_impulse_t impulse_300713_11 = {
+    .project_id = 300713,
     .project_owner = "becem",
-    .project_name = "hand",
-    .deploy_version = 1,
+    .project_name = "Car Detection",
+    .deploy_version = 11,
 
-    .nn_input_frame_size = 9216,
+    .nn_input_frame_size = 27648,
     .raw_sample_count = 9216,
     .raw_samples_per_frame = 1,
     .dsp_input_frame_size = 9216 * 1,
@@ -114,7 +114,7 @@ const ei_impulse_t impulse_300495_1 = {
     .object_detection_last_layer = EI_CLASSIFIER_LAST_LAYER_UNKNOWN,
     .fomo_output_size = 0,
     
-    .tflite_output_features_count = 3,
+    .tflite_output_features_count = 2,
     .learning_blocks_size = ei_learning_blocks_size,
     .learning_blocks = ei_learning_blocks,
 
@@ -126,11 +126,11 @@ const ei_impulse_t impulse_300495_1 = {
     .slices_per_model_window = 4,
 
     .has_anomaly = 0,
-    .label_count = 3,
+    .label_count = 2,
     .calibration = ei_calibration,
     .categories = ei_classifier_inferencing_categories
 };
 
-const ei_impulse_t ei_default_impulse = impulse_300495_1;
+const ei_impulse_t ei_default_impulse = impulse_300713_11;
 
 #endif // _EI_CLASSIFIER_MODEL_METADATA_H_
